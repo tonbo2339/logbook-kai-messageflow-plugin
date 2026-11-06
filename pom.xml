@@ -195,7 +195,7 @@
                                         <!-- master のプラグイン一覧画面 (DetailPlugin) に表示される情報 -->
                                         <Bundle-Name>messageflow-plugin</Bundle-Name>
                                         <Bundle-Vendor>tonbo</Bundle-Vendor>
-                                        <Bundle-Version>2.0.1</Bundle-Version>
+                                        <Bundle-Version>2.0.1.1</Bundle-Version>
                                         <Bundle-License>MIT</Bundle-License>
                                     </manifestEntries>
                                 </transformer>
