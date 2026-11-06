@@ -11,8 +11,8 @@ target/
 .classpath
 
 # 実行時に生成される設定・ログファイル
-config/
-logs/
+/config/
+/logs/
 
 .DS_Store
 Thumbs.db

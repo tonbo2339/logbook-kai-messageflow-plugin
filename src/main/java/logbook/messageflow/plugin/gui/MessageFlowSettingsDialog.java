@@ -21,7 +21,7 @@ import javafx.stage.Window;
 import logbook.messageflow.config.MessageFlowConfig;
 
 /**
- * messageflowの設定 (ポート番号・受け渡し方式・デバッグログ有無) をGUIから変更するためのダイアログ。
+ * messageflowの設定 (ポート番号・受け渡し方式・切断の通知・デバッグログ有無) をGUIから変更するためのダイアログ。
  *
  * ポート番号の変更はサーバーの動的再起動を行わない (安全性・実装コストの都合上)ため、
  * ポート番号を変更した場合のみ「航海日誌改の再起動が必要」であることを案内する。
@@ -64,13 +64,20 @@ public final class MessageFlowSettingsDialog {
         directDispatchNote.setWrapText(true);
         directDispatchNote.setStyle("-fx-font-size: 11px;");
 
+        CheckBox disconnectNotifyCheck = new CheckBox("接続が切れたときに通知する (音とポップアップ)");
+        disconnectNotifyCheck.setSelected(config.isDisconnectNotify());
+        Label disconnectNotifyNote = new Label(
+                "Chromeの DevTools (logbook-kai パネル) を閉じたときなどに知らせます。");
+        disconnectNotifyNote.setWrapText(true);
+        disconnectNotifyNote.setStyle("-fx-font-size: 11px;");
+
         CheckBox debugLogCheck = new CheckBox("デバッグログを出力する (通信内容の詳細をログに記録)");
         debugLogCheck.setSelected(config.isDebugLogEnabled());
 
         Label noteLabel = new Label(
                 "※ ポート番号の変更を反映するには航海日誌改の再起動が必要です。\n"
                         + "航海日誌改ポート番号を本体の設定と同じ値にすると、以後は本体の設定に自動で追従します。\n"
-                        + "受け渡し方式とデバッグログの設定はすぐに反映されます。");
+                        + "受け渡し方式・切断の通知・デバッグログの設定はすぐに反映されます。");
         noteLabel.setWrapText(true);
 
         Button saveButton = new Button("保存");
@@ -83,14 +90,15 @@ public final class MessageFlowSettingsDialog {
         buttonBox.getChildren().addAll(spacer, cancelButton, saveButton);
 
         VBox dispatchBox = new VBox(3, directDispatchCheck, directDispatchNote);
-        VBox root = new VBox(12, grid, dispatchBox, debugLogCheck, noteLabel, errorLabel, buttonBox);
+        VBox notifyBox = new VBox(3, disconnectNotifyCheck, disconnectNotifyNote);
+        VBox root = new VBox(12, grid, dispatchBox, notifyBox, debugLogCheck, noteLabel, errorLabel, buttonBox);
         root.setPadding(new Insets(15));
 
         Stage stage = new Stage();
         stage.setTitle("MessageFlow 設定");
         stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
-        stage.setScene(new Scene(root, 480, 340));
+        stage.setScene(new Scene(root, 480, 400));
 
         cancelButton.setOnAction(e -> stage.close());
 
@@ -106,6 +114,7 @@ public final class MessageFlowSettingsDialog {
             config.setKoukainissikaiMessageFlowPort(port);
             config.setKoukainissikaiPort(kaiPort);
             config.setDirectDispatch(directDispatchCheck.isSelected());
+            config.setDisconnectNotify(disconnectNotifyCheck.isSelected());
             config.setDebugLogEnabled(debugLogCheck.isSelected());
             config.save();
 
