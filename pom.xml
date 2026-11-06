@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>logbook</groupId>
+    <artifactId>logbook-kai-messageflow-plugin</artifactId>
+    <version>2.0.1</version>
+    <packaging>jar</packaging>
+
+    <!--
+      これは logbook-kai-master (航海日誌改) 用のプラグインです。
+      ビルド成果物 (shaded jar) を master の `plugins` フォルダに配置するだけで、
+      アプリ起動時に自動的に読み込まれます (ServiceLoaderベース)。
+
+      重要: master は Jetty 9.4.57 (javax.servlet 名前空間) を使用しているため、
+      本プラグインも Spring Framework 5.3系 (javax.servlet対応の最終系列) を
+      使用しています。Spring Boot / Spring 6系 (jakarta.servlet) は使いません。
+    -->
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+
+        <!-- master (logbook-kai-master) 側と合わせるバージョン。
+             master の pom.xml を必ず確認し、実際の値に合わせること。 -->
+        <jetty.version>9.4.57.v20241219</jetty.version>
+        <log4j.version>2.26.0</log4j.version>
+        <jakarta.json.version>2.1.3</jakarta.json.version>
+        <parsson.version>1.1.7</parsson.version>
+
+        <!-- javax.servlet 名前空間に対応する最後の Spring 5.3 系 -->
+        <spring.version>5.3.39</spring.version>
+    </properties>
+
+    <dependencies>
+        <!-- ===== master が実行時に既に提供するもの (jarには含めない) ===== -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <version>${jakarta.json.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
+            <version>${parsson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.11</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ===== master には無いので shaded jar に同梱するもの ===== -->
+
+        <!-- Jetty 9.4 用 WebSocket サーバー実装 (SockJSのWebSocketトランスポートに必要) -->
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-server</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <!-- websocket-server等が推移的に引き込むが、masterが jetty-server/jetty-proxy
+             経由で既に実行時に提供しているため、shaded jarへの二重梱包を防ぐ目的で
+             明示的に provided 宣言する (直接指定が推移依存より優先されるMavenの
+             依存解決ルールを利用)。 -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-http</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-io</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- javax-websocket-server-impl (JSR-356実装) は削除。
+             Spring 5.3の JettyRequestUpgradeStrategy が実際に使うのは
+             Jetty独自のWebSocket API (websocket-server) であり、
+             javax.websocket(JSR-356)層は使っていない。
+             この依存はjetty-webapp/jetty-annotations/jetty-plus/jetty-jndi/
+             asm一式/javax.websocket-client-api等を不要に引き込み、
+             jarサイズを大きく肥大化させていたため除外した。 -->
+
+        <!-- Spring 5.3 系 (javax.servlet 対応) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-websocket</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
+            <!-- Jetty 9.4.57 が実際にバンドルしているバージョンに合わせること -->
+        </dependency>
+
+        <!-- master (logbook-kai-master) 本体。事前に master 側で
+             `mvn install` を実行し、ローカルリポジトリに入れておくこと。
+             scope は provided (masterのplugins機構が実行時にクラスパスへ
+             追加してくれるため、shaded jarには含めない)。 -->
+        <dependency>
+            <groupId>logbook</groupId>
+            <artifactId>logbook-kai</artifactId>
+            <version>25.0.8</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- masterが jetty-proxy 経由で推移的に持っている jetty-client を、
+             プロキシ経由の通信 (ProxyHttpClient) で利用する。
+             masterが実行時に提供するため provided scope。 -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-client</artifactId>
+            <version>${jetty.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <!-- provided 以外の依存をすべて1つのjarにまとめる (プラグインjarをmasterの
+                     plugins フォルダに1個置くだけで動くようにするため) -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>logbook-kai-messageflow-plugin</finalName>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <!-- master のプラグイン一覧画面 (DetailPlugin) に表示される情報 -->
+                                        <Bundle-Name>logbook-kai-messageflow-plugin</Bundle-Name>
+                                        <Bundle-Vendor>tonbo</Bundle-Vendor>
+                                        <Bundle-Version>2.0.1</Bundle-Version>
+                                        <Bundle-License>MIT</Bundle-License>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

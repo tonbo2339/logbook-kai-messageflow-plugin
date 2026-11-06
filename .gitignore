@@ -1,0 +1,21 @@
+target/
+*.class
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# 実行時に生成される設定・ログファイル
+config/
+logs/
+
+.DS_Store
+Thumbs.db
+
+# 開発メモ (GitHub には上げない)
+DEVELOPMENT_NOTES.md
