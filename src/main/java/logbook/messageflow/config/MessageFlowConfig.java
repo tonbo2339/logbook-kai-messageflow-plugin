@@ -78,6 +78,12 @@ public final class MessageFlowConfig {
      * デフォルトはON。切り替えは再起動不要で、すぐに反映される。
      */
     private volatile boolean disconnectNotify = true;
+    /** 切断の通知までの猶予 (秒) の下限・上限・既定値。拡張は切れると 3 秒後に再接続を試みる。 */
+    public static final int GRACE_MIN_SECONDS = 1;
+    public static final int GRACE_MAX_SECONDS = 30;
+    private static final int GRACE_DEFAULT_SECONDS = 4;
+    /** 全ての接続が切れてから、通知するまで待つ秒数。切り替えは再起動不要。 */
+    private volatile int disconnectGraceSeconds = GRACE_DEFAULT_SECONDS;
 
     private MessageFlowConfig() {
         loadFromJsonFile();
@@ -97,7 +103,8 @@ public final class MessageFlowConfig {
                 + " kaiport=" + getKoukainissikaiPort() + (isKoukainissikaiPortAuto() ? "(自動)" : "")
                 + " debugLog=" + this.debugLogEnabled
                 + " directDispatch=" + this.directDispatch
-                + " disconnectNotify=" + this.disconnectNotify);
+                + " disconnectNotify=" + this.disconnectNotify
+                + " graceSeconds=" + this.disconnectGraceSeconds);
     }
 
     /**
@@ -131,6 +138,9 @@ public final class MessageFlowConfig {
             if (json.containsKey("disconnectNotify")) {
                 this.disconnectNotify = json.getBoolean("disconnectNotify", this.disconnectNotify);
             }
+            if (json.containsKey("disconnectGraceSeconds")) {
+                setDisconnectGraceSeconds(json.getInt("disconnectGraceSeconds", this.disconnectGraceSeconds));
+            }
         } catch (Exception e) {
             logger.warn(CONFIG_FILE + " の読み込みに失敗しました。デフォルト値を使用します。", e);
         }
@@ -151,7 +161,8 @@ public final class MessageFlowConfig {
                 + " kaiport=" + getKoukainissikaiPort() + (isKoukainissikaiPortAuto() ? "(自動)" : "")
                 + " debugLog=" + this.debugLogEnabled
                 + " directDispatch=" + this.directDispatch
-                + " disconnectNotify=" + this.disconnectNotify);
+                + " disconnectNotify=" + this.disconnectNotify
+                + " graceSeconds=" + this.disconnectGraceSeconds);
     }
 
     private void writeJsonFile() {
@@ -169,6 +180,7 @@ public final class MessageFlowConfig {
                     .add("debugLog", this.debugLogEnabled)
                     .add("directDispatch", this.directDispatch)
                     .add("disconnectNotify", this.disconnectNotify)
+                    .add("disconnectGraceSeconds", this.disconnectGraceSeconds)
                     .build();
 
             Map<String, Object> writerConfig = Map.of(JsonGenerator.PRETTY_PRINTING, true);
@@ -252,6 +264,15 @@ public final class MessageFlowConfig {
 
     public void setDisconnectNotify(boolean disconnectNotify) {
         this.disconnectNotify = disconnectNotify;
+    }
+
+    public int getDisconnectGraceSeconds() {
+        return this.disconnectGraceSeconds;
+    }
+
+    /** 範囲外の値は、下限〜上限に丸める。 */
+    public void setDisconnectGraceSeconds(int seconds) {
+        this.disconnectGraceSeconds = Math.max(GRACE_MIN_SECONDS, Math.min(GRACE_MAX_SECONDS, seconds));
     }
 
     /**

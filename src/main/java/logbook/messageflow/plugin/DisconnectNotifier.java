@@ -20,16 +20,13 @@ import logbook.messageflow.web.WebSocketStatus;
  * Chrome拡張との接続が切れたとき (DevTools を閉じた等) に、音とポップアップで知らせます。
  *
  * WebSocket の接続数が変わるたびに呼ばれ ({@link WebSocketStatus#setChangeListener})、
- * 全ての接続が無くなってから {@link #GRACE_MILLIS} 経ってもまだ戻らなければ通知します。
- * 拡張は切れると 3 秒後に再接続を試みるため、それより少し長く待つことで、一瞬の切断では鳴らさない。
+ * 全ての接続が無くなってから、設定の猶予 (既定 4 秒) 経ってもまだ戻らなければ通知します。
+ * 拡張は切れると 3 秒後に再接続を試みるため、それより長く待つことで、一瞬の切断では鳴らさない。
  * 一度も接続していない起動直後と、アプリの終了処理中は通知しません。
  */
 final class DisconnectNotifier {
 
     private static final Logger logger = LogManager.getLogger(DisconnectNotifier.class);
-
-    /** 全て切れてから通知するまでの猶予 (拡張の最初の再接続は 3 秒後) */
-    private static final long GRACE_MILLIS = 4_000;
 
     private static final Object LOCK = new Object();
     private static ScheduledExecutorService scheduler;
@@ -67,7 +64,8 @@ final class DisconnectNotifier {
                     return t;
                 });
             }
-            pending = scheduler.schedule(DisconnectNotifier::confirmDisconnected, GRACE_MILLIS,
+            long graceMillis = MessageFlowConfig.getInstance().getDisconnectGraceSeconds() * 1000L;
+            pending = scheduler.schedule(DisconnectNotifier::confirmDisconnected, graceMillis,
                     TimeUnit.MILLISECONDS);
         }
     }

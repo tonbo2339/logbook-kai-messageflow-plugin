@@ -8,6 +8,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -71,6 +72,27 @@ public final class MessageFlowSettingsDialog {
         disconnectNotifyNote.setWrapText(true);
         disconnectNotifyNote.setStyle("-fx-font-size: 11px;");
 
+        Slider graceSlider = new Slider(MessageFlowConfig.GRACE_MIN_SECONDS, MessageFlowConfig.GRACE_MAX_SECONDS,
+                config.getDisconnectGraceSeconds());
+        graceSlider.setMajorTickUnit(1);
+        graceSlider.setMinorTickCount(0);
+        graceSlider.setSnapToTicks(true);
+        HBox.setHgrow(graceSlider, Priority.ALWAYS);
+        Label graceValueLabel = new Label();
+        graceValueLabel.setMinWidth(40);
+        graceSlider.valueProperty().addListener((obs, oldValue, newValue) ->
+                graceValueLabel.setText(newValue.intValue() + " 秒"));
+        graceValueLabel.setText((int) graceSlider.getValue() + " 秒");
+        HBox graceBox = new HBox(10, new Label("通知までの猶予:"), graceSlider, graceValueLabel);
+        graceBox.setAlignment(Pos.CENTER_LEFT);
+        Label graceNote = new Label(
+                "全ての接続が切れてから、この秒数が経っても戻らないときに通知します。"
+                        + "短くしすぎると、一瞬の切断でも通知されます (拡張の再接続は切断の約3秒後)。");
+        graceNote.setWrapText(true);
+        graceNote.setStyle("-fx-font-size: 11px;");
+        graceBox.disableProperty().bind(disconnectNotifyCheck.selectedProperty().not());
+        graceNote.disableProperty().bind(disconnectNotifyCheck.selectedProperty().not());
+
         CheckBox debugLogCheck = new CheckBox("デバッグログを出力する (通信内容の詳細をログに記録)");
         debugLogCheck.setSelected(config.isDebugLogEnabled());
 
@@ -90,7 +112,7 @@ public final class MessageFlowSettingsDialog {
         buttonBox.getChildren().addAll(spacer, cancelButton, saveButton);
 
         VBox dispatchBox = new VBox(3, directDispatchCheck, directDispatchNote);
-        VBox notifyBox = new VBox(3, disconnectNotifyCheck, disconnectNotifyNote);
+        VBox notifyBox = new VBox(5, disconnectNotifyCheck, disconnectNotifyNote, graceBox, graceNote);
         VBox root = new VBox(12, grid, dispatchBox, notifyBox, debugLogCheck, noteLabel, errorLabel, buttonBox);
         root.setPadding(new Insets(15));
 
@@ -98,7 +120,7 @@ public final class MessageFlowSettingsDialog {
         stage.setTitle("MessageFlow 設定");
         stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
-        stage.setScene(new Scene(root, 480, 400));
+        stage.setScene(new Scene(root, 520, 500));
 
         cancelButton.setOnAction(e -> stage.close());
 
@@ -115,6 +137,7 @@ public final class MessageFlowSettingsDialog {
             config.setKoukainissikaiPort(kaiPort);
             config.setDirectDispatch(directDispatchCheck.isSelected());
             config.setDisconnectNotify(disconnectNotifyCheck.isSelected());
+            config.setDisconnectGraceSeconds((int) graceSlider.getValue());
             config.setDebugLogEnabled(debugLogCheck.isSelected());
             config.save();
 
