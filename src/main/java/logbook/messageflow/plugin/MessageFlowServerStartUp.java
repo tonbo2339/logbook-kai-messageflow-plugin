@@ -64,6 +64,7 @@ public class MessageFlowServerStartUp implements StartUp {
             startQueueConsumers();
             startServer();
             MessageFlowStatusHolder.setServerStarted(true);
+            DisconnectNotifier.install();
             // masterのLauncherにはプラグイン向けの終了SPIが無いため、
             // 独自にシャットダウンフックを登録して後始末を行う。
             // 「見張り役」スレッドは後始末の *前* に起動する (後始末自体が止まった場合にも

@@ -54,7 +54,6 @@ public class MessageFlowTitleStartUp implements StartUp {
                 }
                 MessageFlowStatusHolder.onConnectionObserved();
                 boolean connected = MessageFlowStatusHolder.isConnected();
-                DisconnectNotifier.check(connected, mainStage);
 
                 String base = stripMark(mainStage.getTitle());
                 String newTitle = base + (connected ? MARK_CONNECTED : MARK_NOT_CONNECTED);
